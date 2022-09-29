@@ -19,7 +19,7 @@ class JAXSolver:
       for k in C:
         sK += jnp.einsum('e,jk->ejk', C[k], self.Ktemplates[k])
       K = jnp.zeros((self.mesh.ndof, self.mesh.ndof))
-      K = jax.ops.index_add(K, self.mesh.nodeIdx, sK.flatten())
+      K = K.at[(self.mesh.nodeIdx)].add(sK.flatten()) #UPDATED
       return K
     #-----------------------#
     @jit
@@ -28,7 +28,7 @@ class JAXSolver:
       u_free = jax.scipy.linalg.solve(K[self.mesh.bc['free'],:][:,self.mesh.bc['free']], \
               self.mesh.bc['force'][self.mesh.bc['free']], sym_pos = True, check_finite=False)
       u = jnp.zeros((self.mesh.ndof))
-      u = jax.ops.index_add(u, self.mesh.bc['free'], u_free.reshape(-1)) # homog bc wherev fixed
+      u = u.at[self.mesh.bc['free']].set(u_free.reshape(-1)) #UPDATED
       return u
     #-----------------------#
     @jit
