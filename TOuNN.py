@@ -8,7 +8,7 @@ from FE_Solver import JAXSolver
 from network import TopNet
 from projections import applyFourierMap, \
       applySymmetry, applyRotationalSymmetry, applyExtrusion
-from jax.experimental import optimizers
+from jax.example_libraries import optimizers
 from materialCoeffs import microStrs
 import pickle
 
@@ -202,7 +202,7 @@ class TOuNN:
                interpolation='none',vmin=0, vmax=maxC, origin = 'lower') 
     plt.show()
 
-    plt.savefig(f'./frames/top_{self.epoch:d}.pdf', dpi=300)
+    plt.savefig(f'./top_{self.epoch:d}.pdf', dpi=300)
 
     plt.figure()
     plt.imshow(colorImg.T, cmap = colors.ListedColormap(fillColors[:maxC+1]),\
