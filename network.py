@@ -5,7 +5,7 @@ from jax import jit, random
 np.random.seed(0)
 
 rand_key = random.PRNGKey(0) # reproducibility
-from jax.experimental import stax
+from jax.example_libraries import stax
 #-----------------------#
 def elementwise(fun, **fun_kwargs):
     """Layer that applies a scalar function elementwise on its inputs."""
