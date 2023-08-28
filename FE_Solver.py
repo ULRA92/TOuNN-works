@@ -26,7 +26,7 @@ class JAXSolver:
     def solve(K):
       # eliminate fixed dofs for solving sys of eqns
       u_free = jax.scipy.linalg.solve(K[self.mesh.bc['free'],:][:,self.mesh.bc['free']], \
-              self.mesh.bc['force'][self.mesh.bc['free']], sym_pos = True, check_finite=False)
+              self.mesh.bc['force'][self.mesh.bc['free']], assume_a='pos', check_finite=False)
       u = jnp.zeros((self.mesh.ndof))
       u = u.at[self.mesh.bc['free']].set(u_free.reshape(-1)) #UPDATED
       return u
