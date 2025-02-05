@@ -60,8 +60,9 @@ class RectangularGridMesher:
         if self.bcSettings['dofsPerNode'] == 1:  # Thermal case
             nodenrs = np.reshape(np.arange(0, self.ndof), (1 + self.nelx, 1 + self.nely)).T
             edofVec = np.reshape(nodenrs[0:-1, 0:-1] + 1, self.numElems, 'F')
-            edofMat = np.matlib.repmat(edofVec, 4, 1).T + np.matlib.repmat(
-                np.array([0, self.nely + 1, self.nely, -1]), self.numElems, 1)
+            edofMat = np.tile(edofVec, (4, 1)).T + np.tile(
+              np.array([0, self.nely + 1, self.nely, -1]).reshape(4, 1), self.numElems
+            ).T
 
         iK = tuple(np.kron(edofMat, np.ones((n, 1))).flatten().astype(int))
         jK = tuple(np.kron(edofMat, np.ones((1, n))).flatten().astype(int))
@@ -100,25 +101,17 @@ class RectangularGridMesher:
         return xy
 
     # --------------------------#
-    def processBoundaryCondition(self):
-        """
-        Processes boundary conditions for heat transfer.
-        """
-        temperature = np.zeros((self.ndof, 1))
-        heat_flux = np.zeros((self.ndof, 1))
+    def processBoundaryCondition(self, fixedTempNodes=None, heatFluxNodes=None, heatSourceNodes=None):
+      """
+      Processes boundary conditions for heat transfer.
+      """
+      if not hasattr(self, 'bc'):  # Ensure bc exists before using it
+        self.bc = {}
 
-        if 'fixedTemperatureNodes' in self.bcSettings:
-            fixed = self.bcSettings['fixedTemperatureNodes']
-        else:
-            fixed = []
-
-        if 'heatFluxNodes' in self.bcSettings:
-            flux_nodes = self.bcSettings['heatFluxNodes']
-            heat_flux[flux_nodes] = self.bcSettings['heatMagnitude']
-
-        free = np.setdiff1d(np.arange(self.ndof), fixed)
-
-        self.bc = {'temperature': temperature, 'fixed': fixed, 'free': free, 'flux': heat_flux}
+      self.bc['fixed'] = fixedTempNodes if fixedTempNodes is not None and fixedTempNodes.size > 0 else []
+      self.bc['flux'] = heatFluxNodes if heatFluxNodes is not None and heatFluxNodes.size > 0 else []
+      self.bc['source'] = heatSourceNodes if heatSourceNodes is not None and heatSourceNodes.size > 0 else []
+      self.bc['free'] = np.setdiff1d(np.arange(self.ndof), self.bc['fixed'])
 
     # --------------------------#
     def plotFieldOnMesh(self, field, titleStr):

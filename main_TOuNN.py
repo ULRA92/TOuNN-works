@@ -1,7 +1,9 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.rcParams['font.family'] = 'Times New Roman' # Or 'Helvetica' / 'Times New Roman'
 from examples import getExampleBC
-from mesher import RectangularGridMesher, UnstructuredMesher
+from Mesher import RectangularGridMesher, UnstructuredMesher
 from projections import computeFourierMap
 from material import Material
 from TOuNN import TOuNN
@@ -28,7 +30,7 @@ mesh = RectangularGridMesher(ndim, nelx, nely, elemSize, bcSettings, physics='th
 # mesh = UnstructuredMesher(bcSettings, physics='thermal')
 
 # Apply thermal boundary conditions
-mesh.applyBoundaryConditions(
+mesh.processBoundaryCondition(
     fixedTempNodes=bcSettings.get('fixedTemperatureNodes', []),
     heatFluxNodes=bcSettings.get('heatFluxNodes', []),
     heatSourceNodes=bcSettings.get('heatSourceNodes', [])
