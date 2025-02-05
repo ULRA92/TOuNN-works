@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np  # Ensure NumPy is installed using: pip install numpy
 import jax.numpy as jnp
 import jax
 from jax import jit
@@ -6,14 +6,13 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from FE_Solver import JAXSolver
 from network import TopNet
-from projections import applyFourierMap, \
-      applySymmetry, applyRotationalSymmetry, applyExtrusion
+from projections import applyFourierMap,applySymmetry, applyRotationalSymmetry, applyExtrusion
 from jax.example_libraries import optimizers
 from materialCoeffs import microStrs
 import pickle
 
 class TOuNN:
-  def __init__(self, exampleName, mesh, material, nnSettings, symMap, \
+  def __init__(self, exampleName, mesh, material, nnSettings, symMap,
                         fourierMap, rotationalSymmetry, extrusion):
     self.exampleName = exampleName
     self.FE = JAXSolver(mesh, material)
