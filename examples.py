@@ -1,120 +1,119 @@
 import numpy as np
-import time
-import matplotlib.pyplot as plt
 
-    #  ~~~~~~~~~~~~ Examples ~~~~~~~~~~~~~#
+#  ~~~~~~~~~~~~ Heat Transfer Examples ~~~~~~~~~~~~~#
 def getExampleBC(example, nelx, nely, elemSize):
-  if(example == 1): # tip cantilever
-    exampleName = 'TipCantilever'
-    bcSettings = {'fixedNodes': np.arange(0,2*(nely+1),1),\
-                  'forceMagnitude': -1.,\
-                  'forceNodes': 2*(nelx+1)*(nely+1)-2*nely+1, \
-                  'dofsPerNode':2}
-    symMap = {'XAxis':{'isOn':False, 'midPt':0.5*nely*elemSize[1]},\
-      'YAxis':{'isOn':False, 'midPt':0.5*nelx*elemSize[0]}}
-  
-  elif(example == 2): # mid cantilever
-    exampleName = 'MidCantilever'
-    bcSettings = {'fixedNodes': np.arange(0,2*(nely+1),1),\
-                  'forceMagnitude': -1.,\
-                  'forceNodes': 2*(nelx+1)*(nely+1)- (nely+1),\
-                  'dofsPerNode':2}
-    symMap = {'XAxis':{'isOn':True, 'midPt':0.5*nely*elemSize[1]},\
-      'YAxis':{'isOn':False, 'midPt':0.5*nelx*elemSize[0]}}
-  
-  elif(example == 3): #  MBBBeam
-    exampleName = 'MBBBeam'
-    fn= np.union1d(np.arange(0,2*(nely+1),2), 2*(nelx+1)*(nely+1)-2*(nely+1)+1);
-    bcSettings = {'fixedNodes': fn,\
-                  'forceMagnitude': -1.,\
-                  'forceNodes': 2*(nely+1)+1,\
-                  'dofsPerNode':2}
-    symMap = {'XAxis':{'isOn':False, 'midPt':0.5*nely*elemSize[1]},\
-      'YAxis':{'isOn':False, 'midPt':0.5*nelx*elemSize[0]}}
-  
-  elif(example == 4): #  Michell
-    exampleName = 'Michell'
-    fn = np.array([ 0,1,2*(nelx+1)*(nely+1)-2*nely] )
-    bcSettings = {'fixedNodes': fn,\
-                  'forceMagnitude': -1.,\
-                  'forceNodes': nelx*(nely+1)+1,\
-                  'dofsPerNode':2}
-    symMap = {'XAxis':{'isOn':False, 'midPt':0.5*nely*elemSize[1]},\
-      'YAxis':{'isOn':True, 'midPt':0.5*nelx*elemSize[0]}}
-  
-  elif(example == 5): #  DistributedMBB
-    exampleName = 'Bridge'
-    fixn = np.array([ 0,1,2*(nelx+1)*(nely+1)-2*nely+1,2*(nelx+1)*(nely+1)-2*nely] );
-    frcn = np.arange(2*nely+1, 2*(nelx+1)*(nely+1), 8*(nely+1))
-    bcSettings = {'fixedNodes': fixn,\
-                  'forceMagnitude': -1./(nelx+1.),\
-                  'forceNodes': frcn ,\
-                  'dofsPerNode':2} 
-    symMap = {'XAxis':{'isOn':False, 'midPt':0.5*nely*elemSize[1]},\
-      'YAxis':{'isOn':True, 'midPt':0.5*nelx*elemSize[0]}}
+    """
+    Define boundary conditions and symmetry maps for heat transfer examples.
 
-  elif(example == 6): # Tensile bar
-    exampleName = 'TensileBar'
-    fn =np.union1d(np.arange(0,2*(nely+1),2), 1); 
-    midDofX= 2*(nelx+1)*(nely+1)- (nely)
-    bcSettings = {'fixedNodes': fn,\
-                  'forceMagnitude': 1.,\
-                  'forceNodes': np.arange(midDofX-6, midDofX+6, 2),\
-                  'dofsPerNode':2}; 
-    symMap = {'XAxis':{'isOn':True, 'midPt':0.5*nely*elemSize[1]},\
-      'YAxis':{'isOn':False, 'midPt':0.5*nelx*elemSize[0]}}
-    
-  elif(example == 7): # full right cantilever
-    exampleName = 'fullRightCantilever'
-    forceNodes = np.arange(2*(nelx+1)*(nely+1)-2*nely+1,\
-                           2*(nelx+1)*(nely+1), 2)
-    bcSettings = {'fixedNodes': np.arange(0,2*(nely+1),1),\
-                  'forceMagnitude': -100.,\
-                  'forceNodes': forceNodes,\
-                  'dofsPerNode':2} # multiplyy C by 1000 to replicate
-    symMap = {'XAxis':{'isOn':True, 'midPt':0.5*nely*elemSize[1]},\
-      'YAxis':{'isOn':False, 'midPt':0.5*nelx*elemSize[0]}}
+    - Heat flux replaces force boundary conditions.
+    - Fixed temperature replaces displacement constraints.
+    """
+    if example == 1:  # Heat Conduction in a Rod (Tip Cantilever Equivalent)
+        exampleName = 'HeatRod'
+        bcSettings = {
+            'fixedTemperatureNodes': np.arange(0, (nely+1), 1),  # Fix temperature at one end
+            'heatFluxNodes': [(nelx+1)*(nely+1)-1],  # Apply heat flux at the other end
+            'heatMagnitude': 100.,  # Heat flux magnitude
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': False}, 'YAxis': {'isOn': False}}
 
-  elif(example == 8): # Torsion
-    exampleName = 'Torsion'
-    forceFile = './Mesh/Torsion/force.txt'
-    fixedFile = './Mesh/Torsion/fixed.txt'
-    nodeXYFile = './Mesh/Torsion/nodeXY.txt'
-    elemNodesFile = './Mesh/Torsion/elemNodes.txt'
-    bcSettings = {'forceFile': forceFile,\
-                  'fixedFile': fixedFile,\
-                  'elemNodesFile': elemNodesFile,\
-                  'nodeXYFile': nodeXYFile,\
-                  'dofsPerNode':2}; 
-    symMap = {'XAxis':{'isOn':True, 'midPt':50},\
-      'YAxis':{'isOn':True, 'midPt':50}}
+    elif example == 2:  # Heated Plate with Fixed Edges (Mid Cantilever Equivalent)
+        exampleName = 'HeatedPlate'
+        bcSettings = {
+            'fixedTemperatureNodes': np.arange(0, (nely+1), 1),  # Fix temperature at bottom edge
+            'heatFluxNodes': np.arange((nelx+1)*(nely+1)- (nely+1), (nelx+1)*(nely+1)),  # Apply heat flux at top edge
+            'heatMagnitude': 50.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': True}, 'YAxis': {'isOn': False}}
 
-  elif(example == 9):
-    exampleName = 'LBracket'
-    forceFile = './Mesh/LBracket/force.txt'
-    fixedFile = './Mesh/LBracket/fixed.txt'
-    nodeXYFile = './Mesh/LBracket/nodeXY.txt'
-    elemNodesFile = './Mesh/LBracket/elemNodes.txt'
-    bcSettings = {'forceFile': forceFile,\
-                  'fixedFile': fixedFile,\
-                  'elemNodesFile': elemNodesFile,\
-                  'nodeXYFile': nodeXYFile,\
-                  'dofsPerNode':2}
-    symMap = {'XAxis':{'isOn':False, 'midPt':5},\
-      'YAxis':{'isOn':False, 'midPt':5}}
-  elif(example == 10):
-    exampleName = 'midLoadMBB'
-    forceFile = './Mesh/midLoadMBB/force.txt'
-    fixedFile = './Mesh/midLoadMBB/fixed.txt'
-    nodeXYFile = './Mesh/midLoadMBB/nodeXY.txt'
-    elemNodesFile = './Mesh/midLoadMBB/elemNodes.txt'
-    bcSettings = {'forceFile': forceFile,\
-                  'fixedFile': fixedFile,\
-                  'elemNodesFile': elemNodesFile,\
-                  'nodeXYFile': nodeXYFile,\
-                  'dofsPerNode':2}
-    symMap = {'XAxis':{'isOn':False, 'midPt':5},\
-      'YAxis':{'isOn':True, 'midPt':50}}
-  return exampleName, bcSettings, symMap
+    elif example == 3:  # Heat Sink Model (MBB Beam Equivalent)
+        exampleName = 'HeatSink'
+        fixedNodes = np.union1d(np.arange(0, (nely+1), 1), (nelx+1)*(nely+1)- (nely+1))
+        bcSettings = {
+            'fixedTemperatureNodes': fixedNodes,  # Fix temperature at two sides
+            'heatFluxNodes': [2*(nely+1)+1],  # Apply heat flux in the middle
+            'heatMagnitude': 200.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': False}, 'YAxis': {'isOn': False}}
 
-    
+    elif example == 4:  # Heat Diffusion in a Cross-section (Michell Equivalent)
+        exampleName = 'HeatCrossSection'
+        fixedNodes = np.array([0, 1, (nelx+1)*(nely+1)-nely])
+        bcSettings = {
+            'fixedTemperatureNodes': fixedNodes,
+            'heatFluxNodes': [nelx*(nely+1)+1],
+            'heatMagnitude': 150.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': False}, 'YAxis': {'isOn': True}}
+
+    elif example == 5:  # Distributed Heat Transfer in a Bridge-like Structure
+        exampleName = 'HeatBridge'
+        fixedNodes = np.array([0, 1, (nelx+1)*(nely+1)-nely, (nelx+1)*(nely+1)-nely+1])
+        heatFluxNodes = np.arange(2*nely+1, (nelx+1)*(nely+1), 8*(nely+1))
+        bcSettings = {
+            'fixedTemperatureNodes': fixedNodes,
+            'heatFluxNodes': heatFluxNodes,
+            'heatMagnitude': 10.,  # Distributed heat input
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': False}, 'YAxis': {'isOn': True}}
+
+    elif example == 6:  # Heat Distribution in a Tensile Bar
+        exampleName = 'HeatedBar'
+        fixedNodes = np.union1d(np.arange(0, (nely+1), 1), [1])
+        midDofX = (nelx+1)*(nely+1)- (nely)
+        heatFluxNodes = np.arange(midDofX-6, midDofX+6, 2)
+        bcSettings = {
+            'fixedTemperatureNodes': fixedNodes,
+            'heatFluxNodes': heatFluxNodes,
+            'heatMagnitude': 75.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': True}, 'YAxis': {'isOn': False}}
+
+    elif example == 7:  # Large Heat Distribution Over a Surface
+        exampleName = 'FullHeatSurface'
+        heatFluxNodes = np.arange((nelx+1)*(nely+1)-nely+1, (nelx+1)*(nely+1), 2)
+        bcSettings = {
+            'fixedTemperatureNodes': np.arange(0, (nely+1), 1),
+            'heatFluxNodes': heatFluxNodes,
+            'heatMagnitude': 500.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': True}, 'YAxis': {'isOn': False}}
+
+    elif example == 8:  # Torsional Heating
+        exampleName = 'TorsionalHeating'
+        bcSettings = {
+            'fixedTemperatureNodes': np.loadtxt('./Mesh/Torsion/fixed.txt').astype(int),
+            'heatFluxNodes': np.loadtxt('./Mesh/Torsion/force.txt').astype(int),
+            'heatMagnitude': 300.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': True}, 'YAxis': {'isOn': True}}
+
+    elif example == 9:  # L-Shaped Heated Structure
+        exampleName = 'LHeatBracket'
+        bcSettings = {
+            'fixedTemperatureNodes': np.loadtxt('./Mesh/LBracket/fixed.txt').astype(int),
+            'heatFluxNodes': np.loadtxt('./Mesh/LBracket/force.txt').astype(int),
+            'heatMagnitude': 250.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': False}, 'YAxis': {'isOn': False}}
+
+    elif example == 10:  # Mid-Loaded Heat Transfer in MBB Beam
+        exampleName = 'MidLoadHeatMBB'
+        bcSettings = {
+            'fixedTemperatureNodes': np.loadtxt('./Mesh/midLoadMBB/fixed.txt').astype(int),
+            'heatFluxNodes': np.loadtxt('./Mesh/midLoadMBB/force.txt').astype(int),
+            'heatMagnitude': 350.,
+            'dofsPerNode': 1
+        }
+        symMap = {'XAxis': {'isOn': False}, 'YAxis': {'isOn': True}}
+
+    return exampleName, bcSettings, symMap
