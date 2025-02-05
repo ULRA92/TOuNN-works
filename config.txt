@@ -4,11 +4,14 @@ nely = 20
 ndim = 2
 elemSize = 1., 1.
 
-
 [MATERIAL]
-E = 1.
-nu = 0.3
+# Thermal Conductivity Limits
+k_max = 10.0  # Maximum conductivity
+k_min = 0.1   # Minimum conductivity
 
+# (Optional) Temperature-Dependent Properties (Future Expansion)
+# temp_dependency = False
+# temp_range = 20, 200  # Min/Max Temperature (°C)
 
 [TOUNN]
 numLayers = 2
@@ -20,14 +23,15 @@ fourier_maxRadius = 200
 fourier_numTerms = 100
 
 [LOSS]
+# Optimizing for Thermal Resistance Minimization
 delAlpha = 0.15
 alpha0 = 0.05
 t0 = 3
 mu = 1.01
 
-
 [OPTIMIZATION]
-desiredVolumeFraction = 0.6
+# Instead of Volume Fraction, we optimize the conductive material fraction
+desiredConductiveFraction = 0.6
 numEpochs = 250
 lr = 1e-2
 gradClip_isOn = True
