@@ -1,128 +1,92 @@
 import numpy as np
 import jax.numpy as jnp
-#-----------------------#
+
+
+# -----------------------#
 def getKMatrixGridMeshTemplates(elemSize, physics):
-  dx, dy = elemSize[0], elemSize[1]
-  #-----------------------#
-  if(physics == 'structural' or physics == 'compliantMechanism'):
-  #-----------------------#
-    def Knn_00(dx,dy):
-      t2 = 1.0/dx
-      t3 = dy*t2*(1.0/3.0)
-      t4 = dy*t2*(1.0/6.0)
-      Knn_00 = jnp.reshape(jnp.array([t3,0,-t3,0,-t4,0,t4,0,0,0,0,0,0,0,0,0\
-                                    ,-t3,0,t3,0,t4,0,-t4,0,0,0,0,0,0,0,0,0,\
-                                    dy*t2*(-1.0/6.0),0,t4,0,t3,0,-t3,0,0,0,\
-                                    0,0,0,0,0,0,t4,0,-t4,0,-t3,0,t3,0,0,0,0,\
-                                    0,0,0,0,0]),(8,8))
-      return Knn_00
-  #-----------------------#
-    def Knn_11(dx,dy):
-      t2 = 1.0/dy
-      t3 = dx*t2*(1.0/6.0)
-      t4 = dx*t2*(1.0/3.0)
-      Knn_11 = jnp.reshape(jnp.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,t4,0.0,\
-                          t3,0.0,-t3,0.0,-t4,0.0,0.0,0.0,0.0,0.0,0.0,\
-                          0.0,0.0,0.0,t3,0.0,t4,0.0,-t4,0.0,-t3,0.0,0.0,\
-                          0.0,0.0,0.0,0.0,0.0,0.0,0.0,-t3,0.0,-t4,0.0,t4,\
-                          0.0,t3,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,-t4,\
-                          0.0,-t3,0.0,t3,0.0,t4]),(8,8))
-      return Knn_11
-  #-----------------------#
-    def Knn_22(dx,dy):
-      t2 = 1.0/dy
-      t3 = dx*t2*(1.0/6.0)
-      t4 = dx*t2*(1.0/3.0)
-      t5 = 1.0/dx
-      t6 = dy*t5*(1.0/3.0)
-      t7 = dy*t5*(1.0/6.0)
-      Knn_22 = jnp.reshape(jnp.array([t4,1.0/4.0,t3,-1.0/4.0,-t3,-1.0/4.0, -t4,\
-                                    1.0/4.0,1.0/4.0,t6,1.0/4.0,-t6,-1.0/4.0,\
-                                    -t7,-1.0/4.0,t7,t3,1.0/4.0,t4,-1.0/4.0,-t4,\
-                                    -1.0/4.0,-t3,1.0/4.0,-1.0/4.0,-t6,-1.0/4.0,\
-                                    t6,1.0/4.0,t7,1.0/4.0,-t7,-t3,-1.0/4.0,-t4,\
-                                    1.0/4.0,t4,1.0/4.0,t3,-1.0/4.0,-1.0/4.0,\
-                                    dy*t5*(-1.0/6.0),-1.0/4.0,t7,1.0/4.0,t6,\
-                                    1.0/4.0,-t6,-t4,-1.0/4.0,-t3,1.0/4.0,t3,\
-                                    1.0/4.0,t4,-1.0/4.0,1.0/4.0,t7,1.0/4.0,-t7,\
-                                    -1.0/4.0,-t6,-1.0/4.0,t6]),(8,8))
-      return Knn_22
-  #-----------------------#
-    def Knn_01(dx,dy):
-      Knn_01 = jnp.reshape(jnp.array([0.0,1.0/4.0,0.0,1.0/4.0,0.0,-1.0/4.0,0.0,\
-                          -1.0/4.0,1.0/4.0,0.0,-1.0/4.0,0.0,-1.0/4.0,\
-                          0.0,1.0/4.0,0.0,0.0,-1.0/4.0,0.0,-1.0/4.0,0.0,\
-                          1.0/4.0,0.0,1.0/4.0,1.0/4.0,0.0,-1.0/4.0,0.0,\
-                          -1.0/4.0,0.0,1.0/4.0,0.0,0.0,-1.0/4.0,0.0,-1.0/4.0,\
-                          0.0,1.0/4.0,0.0,1.0/4.0,-1.0/4.0,0.0,1.0/4.0,0.0,\
-                          1.0/4.0,0.0,-1.0/4.0,0.0,0.0,1.0/4.0,0.0,1.0/4.0,0.0,\
-                          -1.0/4.0,0.0,-1.0/4.0,-1.0/4.0,0.0,1.0/4.0,0.0,1.0/4.0,\
-                          0.0,-1.0/4.0,0.0]),(8,8))
-      return Knn_01
-    #-----------------------#
-    def Knn_02(dx,dy):
-      t2 = 1.0/dx
-      t3 = dy*t2*(1.0/3.0)
-      t4 = dy*t2*(1.0/6.0)
-      Knn_02 = jnp.reshape(jnp.array([1.0/2.0,t3,0.0,-t3,-1.0/2.0,-t4,0.0,t4,t3,0.0,\
-                          -t3,0.0,-t4,0.0,t4,0.0,0.0,-t3,-1.0/2.0,t3,0.0,t4,\
-                          1.0/2.0,-t4,-t3,0.0,t3,0.0,t4,0.0,-t4,0.0,-1.0/2.0,\
-                          -t4,0.0,t4,1.0/2.0,t3,0.0,-t3,dy*t2*(-1.0/6.0),0.0,t4,\
-                          0.0,t3,0.0,-t3,0.0,0.0,t4,1.0/2.0,-t4,0.0,-t3,-1.0/2.0,\
-                          t3,t4,0.0,-t4,0.0,-t3,0.0,t3,0.0]),(8,8))
-      return Knn_02
-  #-----------------------#
-    def Knn_12(dx,dy):
-      t2 = 1.0/dy
-      t3 = dx*t2*(1.0/6.0)
-      t4 = dx*t2*(1.0/3.0)
-      Knn_12 = jnp.reshape(jnp.array([0.0,t4,0.0,t3,0.0,-t3,0.0,-t4,t4,1.0/2.0,t3,0.0,-t3,\
-                          -1.0/2.0,-t4,0.0,0.0,t3,0.0,t4,0.0,-t4,0.0,-t3,t3,\
-                          0.0,t4,-1.0/2.0,-t4,0.0,-t3,1.0/2.0,0.0,-t3,0.0,-t4,\
-                          0.0,t4,0.0,t3,-t3,-1.0/2.0,-t4,0.0,t4,1.0/2.0,t3,0.0,\
-                          0.0,-t4,0.0,-t3,0.0,t3,0.0,t4,-t4,0.0,-t3,1.0/2.0,t3,\
-                          0.0,t4,-1.0/2.0]),(8,8))
-      return Knn_12
-  #-----------------------#
-    K_templates = {'00': Knn_00(dx, dy), '11': Knn_11(dx, dy),\
-                   '22': Knn_22(dx, dy), '01': Knn_01(dx, dy),\
-                   '02': Knn_02(dx, dy), '12': Knn_12(dx, dy),}
-  elif(physics == 'thermal'):
-  #-----------------------#
-    def Knn_00(dx,dy):
-      t2 = 1.0/dx
-      t3 = (dy*t2)/3.0
-      t4 = (dy*t2)/6.0
-      t5 = -t3
-      t6 = -t4
-      Knn_00 = jnp.reshape(jnp.array([t3,t5,t6,t4,\
-                           t5,t3,t4,t6,\
-                           t6,t4,t3,t5,\
-                           t4,t6,t5,t3]),(4,4))
-      return Knn_00
-  #-----------------------#
-    def Knn_11(dx,dy):
-      t2 = 1.0/dy
-      t3 = (dx*t2)/3.0
-      t4 = (dx*t2)/6.0
-      t5 = -t3
-      t6 = -t4
-      Knn_11 = jnp.reshape(jnp.array([t3,t4,t6,t5,\
-                           t4,t3,t5,t6,\
-                           t6,t5,t3,t4,\
-                           t5,t6,t4,t3]),(4,4))
-      return Knn_11
-  #-----------------------#
-    def Knn_01(dx,dy):
-      Knn_01 = jnp.reshape(jnp.array([1.0/2.0, 0.0, -1.0/2.0, 0.0, \
-                           0.0, -1.0/2.0, 0.0, 1.0/2.0,\
-                           -1.0/2.0, 0.0, 1.0/2.0, 0.0,\
-                           0.0, 1.0/2.0, 0.0, -1.0/2.0]),(4,4))
-      return Knn_01
-  #-----------------------#
+    """
+    Generate element stiffness/conductivity matrix templates for different physics models.
 
-    K_templates = {'00': Knn_00(dx, dy), '11': Knn_11(dx, dy),'01': Knn_01(dx, dy)}
-  
-  return K_templates
+    Parameters:
+        elemSize: (dx, dy) - Element size dimensions.
+        physics: 'structural' or 'thermal' - Determines which template is generated.
 
-#-----------------------#
+    Returns:
+        Dictionary of element stiffness/conductivity matrices.
+    """
+    dx, dy = elemSize[0], elemSize[1]
+
+    # -----------------------#
+    if physics in ['structural', 'compliantMechanism']:
+        # Structural stiffness matrices
+
+        def Knn_00(dx, dy):
+            """Structural template for K_00"""
+            t2 = 1.0 / dx
+            t3 = dy * t2 * (1.0 / 3.0)
+            t4 = dy * t2 * (1.0 / 6.0)
+            return jnp.reshape(jnp.array([
+                t3, 0, -t3, 0, -t4, 0, t4, 0,
+                -t3, 0, t3, 0, t4, 0, -t4, 0,
+                dy * t2 * (-1.0 / 6.0), 0, t4, 0, t3, 0, -t3, 0,
+                t4, 0, -t4, 0, -t3, 0, t3, 0
+            ]), (8, 8))
+
+        def Knn_11(dx, dy):
+            """Structural template for K_11"""
+            t2 = 1.0 / dy
+            t3 = dx * t2 * (1.0 / 6.0)
+            t4 = dx * t2 * (1.0 / 3.0)
+            return jnp.reshape(jnp.array([
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, t4, 0, t3, 0, -t3, 0, -t4,
+                0, t3, 0, t4, 0, -t4, 0, -t3,
+                0, -t3, 0, -t4, 0, t4, 0, t3,
+                0, -t4, 0, -t3, 0, t3, 0, t4
+            ]), (8, 8))
+
+        K_templates = {'00': Knn_00(dx, dy), '11': Knn_11(dx, dy)}
+
+    # -----------------------#
+    elif physics == 'thermal':
+        # Thermal conductivity matrices (Fourier's law)
+
+        def Knn_00(dx, dy):
+            """Thermal conductivity matrix template for K_00"""
+            t2 = 1.0 / dx
+            t3 = (dy * t2) / 3.0
+            t4 = (dy * t2) / 6.0
+            return jnp.reshape(jnp.array([
+                t3, -t3, -t4, t4,
+                -t3, t3, t4, -t4,
+                -t4, t4, t3, -t3,
+                t4, -t4, -t3, t3
+            ]), (4, 4))
+
+        def Knn_11(dx, dy):
+            """Thermal conductivity matrix template for K_11"""
+            t2 = 1.0 / dy
+            t3 = (dx * t2) / 3.0
+            t4 = (dx * t2) / 6.0
+            return jnp.reshape(jnp.array([
+                t3, t4, -t4, -t3,
+                t4, t3, -t3, -t4,
+                -t4, -t3, t3, t4,
+                -t3, -t4, t4, t3
+            ]), (4, 4))
+
+        def Knn_01(dx, dy):
+            """Thermal conductivity matrix template for K_01 (cross-term)"""
+            return jnp.reshape(jnp.array([
+                1.0 / 2.0, 0.0, -1.0 / 2.0, 0.0,
+                0.0, -1.0 / 2.0, 0.0, 1.0 / 2.0,
+                -1.0 / 2.0, 0.0, 1.0 / 2.0, 0.0,
+                0.0, 1.0 / 2.0, 0.0, -1.0 / 2.0
+            ]), (4, 4))
+
+        K_templates = {'00': Knn_00(dx, dy), '11': Knn_11(dx, dy), '01': Knn_01(dx, dy)}
+
+    else:
+        raise ValueError("Unsupported physics type! Choose 'structural' or 'thermal'.")
+
+    return K_templates
