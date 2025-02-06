@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.rcParams['font.family'] = 'Helvetica','Times New Roman'
 import numpy as np
 
 

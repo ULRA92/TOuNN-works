@@ -1,8 +1,9 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.rcParams['font.family'] = 'Helvetica','Times New Roman'
 import jax.numpy as jnp
 import jax
-import matplotlib
 
 class RectangularGridMesher:
     # --------------------------#
@@ -102,16 +103,27 @@ class RectangularGridMesher:
 
     # --------------------------#
     def processBoundaryCondition(self, fixedTempNodes=None, heatFluxNodes=None, heatSourceNodes=None):
-      """
-      Processes boundary conditions for heat transfer.
-      """
-      if not hasattr(self, 'bc'):  # Ensure bc exists before using it
-        self.bc = {}
+        """
+        Processes boundary conditions for heat transfer.
+        """
+        if not hasattr(self, 'bc'):  # Ensure bc exists before using it
+            self.bc = {}
 
-      self.bc['fixed'] = fixedTempNodes if fixedTempNodes is not None and fixedTempNodes.size > 0 else []
-      self.bc['flux'] = heatFluxNodes if heatFluxNodes is not None and heatFluxNodes.size > 0 else []
-      self.bc['source'] = heatSourceNodes if heatSourceNodes is not None and heatSourceNodes.size > 0 else []
-      self.bc['free'] = np.setdiff1d(np.arange(self.ndof), self.bc['fixed'])
+        # Ensure boundary condition keys exist
+        self.bc['fixed'] = fixedTempNodes if fixedTempNodes is not None and len(fixedTempNodes) > 0 else []
+        self.bc['flux'] = heatFluxNodes if heatFluxNodes is not None and len(heatFluxNodes) > 0 else []
+        self.bc['source'] = heatSourceNodes if heatSourceNodes is not None and len(heatSourceNodes) > 0 else []
+
+        # 🔥 Fix: Ensure 'heat' key is present
+        self.bc['heat'] = np.zeros((self.ndof, 1))  # Default heat source as zero
+
+        # If heat source nodes exist, update heat values
+        if heatSourceNodes is not None:
+            for node, value in heatSourceNodes:
+                self.bc['heat'][node] = value  # Assign heat source value
+
+        # Compute free nodes (excluding fixed temperature nodes)
+        self.bc['free'] = np.setdiff1d(np.arange(self.ndof), self.bc['fixed'])
 
     # --------------------------#
     def plotFieldOnMesh(self, field, titleStr):

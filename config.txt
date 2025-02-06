@@ -5,9 +5,10 @@ ndim = 2
 elemSize = 1., 1.
 
 [MATERIAL]
-# Thermal Conductivity Limits
-k_max = 10.0  # Maximum conductivity
-k_min = 0.1   # Minimum conductivity
+# Maximum and minimum thermal conductivity values
+k_max = 10.0
+k_min = 0.1
+
 
 # (Optional) Temperature-Dependent Properties (Future Expansion)
 # temp_dependency = False

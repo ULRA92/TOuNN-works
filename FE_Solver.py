@@ -1,8 +1,8 @@
 import jax.numpy as jnp
-import numpy as np
-from jax import jit
 import jax
-from FE_templates import getKMatrixGridMeshTemplates
+from jax import jit
+import jax.scipy.linalg
+from FE_templates import getKMatrixGridMeshTemplates  # Ensure this supports 'thermal' physics
 
 class JAXSolver:
     def __init__(self, mesh, material):
@@ -13,6 +13,40 @@ class JAXSolver:
         self.k0 = self.material.getThermalConductivityMatrix(self.mesh)  # Use thermal conductivity instead of stiffness
 
     # -----------------------#
+    def computeElementMatrix(self, k):
+        """
+        Compute the **heat transfer element stiffness matrix** for a given thermal conductivity `k`.
+        - Uses predefined `Ktemplates`.
+        """
+        element_matrix = jnp.zeros((4, 4))  # 4 DOFs per element in heat transfer problems
+        for key in self.Ktemplates:
+            element_matrix += k * self.Ktemplates[key]
+        return element_matrix
+
+    # -----------------------#
+    def assembleK(self, k_field):
+        """Assemble the global heat transfer matrix K (conductivity matrix)."""
+        sK = jnp.zeros((self.mesh.numElems, 4, 4))  # 4 DOFs per element in heat transfer problems
+
+        for elem in range(self.mesh.numElems):
+            k = k_field[elem]
+            element_matrix = self.computeElementMatrix(k)  # Get element matrix
+            sK = sK.at[elem].set(element_matrix)
+
+        # Build global matrix K
+        K = jnp.zeros((self.mesh.ndof, self.mesh.ndof))
+
+        # ✅ **Fix the indexing issue**
+        iK, jK = self.mesh.nodeIdx  # Unpack the tuple properly
+
+        for elem in range(self.mesh.numElems):
+            for i in range(4):
+                for j in range(4):
+                    K = K.at[iK[elem * 4 + i], jK[elem * 4 + j]].add(sK[elem, i, j])  # 🔥 Fixed indexing!
+
+        return K
+
+    # -----------------------#
     def objective(self, k_field):
         """
         Objective function for heat transfer optimization.
@@ -20,18 +54,6 @@ class JAXSolver:
         - k_field: Element-wise thermal conductivity distribution.
         """
 
-        @jit
-        def assembleK(k_field):
-            """Assemble the global heat transfer matrix K (conductivity matrix)."""
-            sK = jnp.zeros((self.mesh.numElems, 4, 4))  # 4 DOFs per element in heat transfer problems
-            for k in k_field:
-                sK += jnp.einsum('e,jk->ejk', k_field[k], self.Ktemplates[k])  # Modify for heat transfer
-
-            K = jnp.zeros((self.mesh.ndof, self.mesh.ndof))
-            K = K.at[self.mesh.nodeIdx].add(sK.flatten())  # Updated for JAX compatibility
-            return K
-
-        # -----------------------#
         @jit
         def solve(K):
             """
@@ -50,7 +72,6 @@ class JAXSolver:
             T = T.at[self.mesh.bc['free']].set(T_free.reshape(-1))  # Updated
             return T
 
-        # -----------------------#
         @jit
         def computeThermalObjective(K, T):
             """
@@ -61,8 +82,7 @@ class JAXSolver:
             thermal_resistance = jnp.sum(K * jnp.square(jnp.gradient(T)))
             return thermal_resistance
 
-        # -----------------------#
-        K = assembleK(k_field)  # Assemble global heat transfer matrix
+        K = self.assembleK(k_field)  # Assemble global heat transfer matrix
         T = solve(K)  # Solve for temperature field
         J = computeThermalObjective(K, T)  # Compute objective (thermal resistance)
         return J
@@ -73,6 +93,7 @@ class JAXSolver:
         Solves the temperature distribution based on the given material distribution.
         Returns: Nodal temperature field.
         """
+
         @jit
         def assembleK():
             """Assemble the heat transfer matrix."""
@@ -87,7 +108,6 @@ class JAXSolver:
         @jit
         def solve(K):
             """Solve the temperature field T from K*T = Q."""
-
             T_free = jax.scipy.linalg.solve(
                 K[self.mesh.bc['free'], :][:, self.mesh.bc['free']],
                 self.mesh.bc['heat'][self.mesh.bc['free']],

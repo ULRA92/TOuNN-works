@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.rcParams['font.family'] = 'Times New Roman' # Or 'Helvetica' / 'Times New Roman'
+matplotlib.rcParams['font.family'] = 'Helvetica','Times New Roman'
 from examples import getExampleBC
 from Mesher import RectangularGridMesher, UnstructuredMesher
 from projections import computeFourierMap
