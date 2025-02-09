@@ -1,26 +1,97 @@
-# [GM-TOuNN: Graded Multiscale Topology Optimization using  Neural Networks](https://arxiv.org/abs/2204.06682)
+Introduction
+Topology optimization for heat transfer aims to determine the optimal distribution of materials to minimize thermal resistance or achieve desired temperature distributions under given boundary conditions. This project employs neural networks to model the design domain, using a Fourier-mapped feature space to ensure smooth and manufacturable results.
 
-[Aaditya Chandrasekhar*](https://aadityacs.github.io/), [Saketh Sridhara*](https://sakethsridhara.github.io/), [Krishnan Suresh](https://directory.engr.wisc.edu/me/faculty/suresh_krishnan)  
-University of Wisconsin-Madison 
+How It Works:
+Neural Networks Represent the Density Field
 
+Instead of traditional element-wise optimization, a deep neural network (DNN) learns to represent the material distribution.
+Finite Element Analysis (FEA) for Heat Transfer
 
-## Abstract
+The framework employs a JAX-based finite element solver to evaluate thermal performance.
+Optimization via Backpropagation
 
-Multiscale topology optimization (M-TO) entails generating an optimal global topology,and an optimal set of microstructures at a smaller scale, for a physics-constrained problem. With the advent of additive manufacturing, M-TO has gained significant prominence. However, generating  distinct and optimal microstructures  at various  locations can be computationally very expensive. As an alternate, graded multiscale topology optimization (GM-TO) has been proposed where one or more pre-selected and graded (parameterized) microstructural topologies are used to fill the domain optimally. This leads to a significant reduction in computation while retaining many of the benefits of M-TO.
-	
-A successful GM-TO framework must: (1) be capable of efficiently handling numerous pre-selected microstructures, (2) be able to continuously switch between these  microstructures (during optimization), (3) ensure that the partition of unity is satisfied, and (4) discourage microstructure mixing at termination.
-	
-In this paper, we propose to meet these requirements by exploiting the unique classification capacity of neural networks. Specifically, we propose a graded multiscale topology optimization using neural-network (GM-TOuNN) framework with the following features: (1) the number of design variables is only weakly dependent on the number of pre-selected microstructures, (2) it guarantees partition of unity while discouraging microstructure mixing, and (3) it supports automatic differentiation, thereby  eliminating manual sensitivity analysis. The proposed framework is illustrated through several examples.
+The network is trained using a physics-based loss function, incorporating thermal conductivity interpolation and heat conduction constraints.
+Features
+Neural network-based material representation for topology optimization.
+JAX-accelerated finite element solver (FEA) for heat transfer analysis.
+Fourier-mapped input transformations for enhanced feature learning.
+Support for symmetry, extrusion, and rotational constraints to enforce manufacturability.
+SIMP and RAMP interpolation schemes for thermal conductivity.
+Efficient gradient-based optimization using Adam and constraint-handling techniques.
+Installation
+To set up the project locally:
 
-## Citation
+Clone the repository:
 
-```
-@article{chand2022GMTOuNN,
-author = {Chandrasekhar, Aaditya and Sridhara, Saketh and Suresh, Krishnan},
-title = {GM-TOuNN: Graded Multiscale Topology Optimization using  Neural Networks},
-journal = {arXiv preprint arXiv:2204.06682},
-year={2022}
-}
-```
+bash
+Copy
+Edit
+git clone https://github.com/ULRA92/TOuNN-works.git
+cd TOuNN-works
+Set up a virtual environment (optional but recommended):
 
-*contributed equally
+bash
+Copy
+Edit
+python3 -m venv venv
+source venv/bin/activate  # On Windows, use venv\Scripts\activate
+Install the required dependencies:
+
+bash
+Copy
+Edit
+pip install -r requirements.txt
+Note: Ensure you have Python 3.7 or later installed.
+
+Usage
+Running Heat Transfer Topology Optimization
+Prepare the configuration file (config.txt)
+
+Define mesh settings, material properties, Fourier mapping settings, and optimization parameters.
+Run the main script:
+
+bash
+Copy
+Edit
+python main_TOuNN.py
+This will initialize the optimization process using the provided settings.
+View the optimized topology:
+
+Results will be saved as PDF plots and temperature distribution visualizations.
+Project Structure
+bash
+Copy
+Edit
+TOuNN-works/
+│── main_TOuNN.py            # Main script to run heat transfer topology optimization
+│── TOuNN.py                 # Core class integrating neural networks with FEA
+│── network.py                # Neural network architecture for topology optimization
+│── FE_Solver.py              # Finite element solver for heat conduction analysis
+│── projections.py            # Symmetry, rotational constraints, Fourier mapping
+│── materialCoeffs.py         # Material properties and thermal conductivity models
+│── requirements.txt          # Python dependencies
+│── config.txt                # Configuration settings for optimization
+│── docs/                     # Documentation and additional resources
+│── results/                  # Output directory for optimized designs
+
+Contributing
+We welcome contributions to improve the framework. To contribute:
+
+Fork the repository.
+Create a new branch for your feature or bug fix.
+Implement and test your changes.
+Submit a pull request with a clear description.
+For more details, see CONTRIBUTING.md.
+
+License
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+Acknowledgements
+This project builds upon:
+
+TOuNN: Aaditya Chandrasekhar and Krishnan Suresh, "TOuNN: Topology Optimization using Neural Networks", University of Wisconsin-Madison.
+JAX: High-performance machine learning framework for differentiable programming.
+Finite Element Methods (FEM) applied to heat transfer simulations.
+For the original TOuNN paper and repository, visit:
+UW-ERSL/TOuNN
+
