@@ -26,10 +26,10 @@ class TOuNN:
         self.extrusion = extrusion
         self.objectiveHandle = lambda *args: self.objective(FE=self.FE, *args)
 
-    @partial(jit, static_argnames=["FE"])
-    def objective(FE, getThermalMatrix, mstrType, nn_rho):
+    def objective(self, getThermalMatrix, mstrType, nn_rho):
+        """ Objective function - No JIT on FE """
         k = jnp.array(getThermalMatrix(mstrType, nn_rho))
-        return FE.objective(k)
+        return self.FE.objective(k)
 
     def getThermalMatrix(self, mstrType, nn_rho):
         vfracPow = {str(pw): nn_rho ** pw for pw in range(self.mstrData.get('square', {}).get('order', 0) + 1)}

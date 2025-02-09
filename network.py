@@ -25,13 +25,13 @@ class TopNet:
         - nnSettings: Dictionary containing neural network hyperparameters.
         """
         self.nnSettings = nnSettings
-        init_fn, applyNN = self.makeNetwork(nnSettings)
+        self.init_fn, self.applyNN = self.makeNetwork(nnSettings)
 
         # JAX compiled forward function
-        self.fwdNN = jit(lambda nnwts, x: applyNN(nnwts, x.reshape(-1, x.shape[-1]) if x.ndim == 1 else x))
+        self.fwdNN = jit(lambda nnwts, x: self.applyNN(nnwts, x.reshape(-1, x.shape[-1]) if x.ndim < 2 else x))
 
         # Initialize network weights
-        _, self.wts = init_fn(rand_key, (-1, nnSettings['inputDim']))
+        _, self.wts = self.init_fn(rand_key, (-1, nnSettings['inputDim']))
 
     # -----------------------#
     def makeNetwork(self, nnSettings):
@@ -42,7 +42,7 @@ class TopNet:
         - Last layer outputs (M microstructure types + 1 conductivity value).
         """
         layers = []
-        for i in range(nnSettings['numLayers'] - 1):
+        for _ in range(nnSettings['numLayers'] - 1):
             layers.append(stax.Dense(nnSettings['numNeuronsPerLayer']))
             layers.append(Swish)  # Activation function
 
@@ -59,6 +59,7 @@ class TopNet:
         - Predicts `kappa` (thermal conductivity field).
         """
         self.wts = wts
+        x = x.reshape(-1, x.shape[-1]) if x.ndim < 2 else x  # Ensure correct shape
         nnOut = self.fwdNN(wts, x)
 
         # Softmax for microstructure selection

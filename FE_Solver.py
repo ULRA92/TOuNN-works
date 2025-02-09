@@ -46,45 +46,31 @@ class JAXSolver:
         return K
 
     # -----------------------#
-    @jit
     def objective(self, k_field):
         """Objective function for heat transfer optimization."""
-        print(f"DEBUG: Type of k_field: {type(k_field)} | Shape: {k_field.shape}")
-        print(f"DEBUG: Type of self: {type(self)}")  # Should be JAXSolver, not an array
-
         k_field = jnp.asarray(k_field)  # ✅ Ensure it’s a JAX array
-        print(f"DEBUG: Converted k_field to JAX array with shape: {k_field.shape}")
-
         K = self.assembleK(k_field)
-        T = self.solve(K)  # 🚨 Does `solve()` return an array?
-
-        # 🚨 Does `computeThermalObjective()` expect JAX arrays?
+        T = self.solve(K)  # Ensure solve() is correctly referenced
         J = self.computeThermalObjective(K, T)
-        print(f"DEBUG: Objective Value Computed: {J}")
-
         return J
 
-        @jit
-        def solve(K):
-            """Solves for temperature field using Fourier's heat conduction equation."""
-            T_free = jax.scipy.linalg.solve(
-                K[self.mesh.bc['free'], :][:, self.mesh.bc['free']],
-                self.mesh.bc['heat'][self.mesh.bc['free']],  # Heat source instead of force
-                assume_a='pos', check_finite=False
-            )
-            T = jnp.zeros((self.mesh.ndof))
-            T = T.at[self.mesh.bc['free']].set(T_free.reshape(-1))  # Updated
-            return T
+    # -----------------------#
+    def solve(self, K):
+        """Solves for temperature field using Fourier's heat conduction equation."""
+        T_free = jax.scipy.linalg.solve(
+            K[self.mesh.bc['free'], :][:, self.mesh.bc['free']],
+            self.mesh.bc['heat'][self.mesh.bc['free']],  # Heat source instead of force
+            assume_a='pos', check_finite=False
+        )
+        T = jnp.zeros((self.mesh.ndof))
+        T = T.at[self.mesh.bc['free']].set(T_free.reshape(-1))  # Updated
+        return T
 
-        def computeThermalObjective(K, T):
-            """Compute total thermal resistance to minimize heat transfer resistance."""
-            thermal_resistance = jnp.sum(K * jnp.square(jnp.gradient(T)))
-            return thermal_resistance
-
-        K = self.assembleK(k_field)  # Assemble global heat transfer matrix
-        T = solve(K)  # Solve for temperature field
-        J = computeThermalObjective(K, T)  # Compute objective (thermal resistance)
-        return J
+    # -----------------------#
+    def computeThermalObjective(self, K, T):
+        """Compute total thermal resistance to minimize heat transfer resistance."""
+        thermal_resistance = jnp.sum(K * jnp.square(jnp.gradient(T)))
+        return thermal_resistance
 
     # -----------------------#
     def solveTemperatureField(self):
@@ -92,7 +78,6 @@ class JAXSolver:
         Solves the temperature distribution based on the given material distribution.
         Returns: Nodal temperature field.
         """
-        #@jit
         def assembleK():
             """Assemble the heat transfer matrix."""
             sK = jnp.zeros((self.mesh.numElems, 4, 4))  # 4 DOFs per element for temperature
@@ -103,7 +88,6 @@ class JAXSolver:
             K = K.at[self.mesh.nodeIdx].add(sK.flatten())
             return K
 
-        @jit
         def solve(K):
             """Solve the temperature field T from K*T = Q."""
             T_free = jax.scipy.linalg.solve(
