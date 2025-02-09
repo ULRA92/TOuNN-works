@@ -28,7 +28,7 @@ class TopNet:
         init_fn, applyNN = self.makeNetwork(nnSettings)
 
         # JAX compiled forward function
-        self.fwdNN = jit(lambda nnwts, x: applyNN(nnwts, x))
+        self.fwdNN = jit(lambda nnwts, x: applyNN(nnwts, x.reshape(-1, x.shape[-1]) if x.ndim == 1 else x))
 
         # Initialize network weights
         _, self.wts = init_fn(rand_key, (-1, nnSettings['inputDim']))

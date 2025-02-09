@@ -1,46 +1,43 @@
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.rcParams['font.family'] = 'Helvetica','Times New Roman'
+import matplotlib.font_manager as fm
 import numpy as np
 
+# DEBUG: Print available fonts to ensure selection
+available_fonts = sorted([f.name for f in fm.fontManager.ttflist])
+print("DEBUG: Available Fonts in Matplotlib:", available_fonts)
+
+# Pick a known available font from the list
+chosen_font = "Arial"  # Change this to any font from the printed list
+if chosen_font in available_fonts:
+    matplotlib.rcParams['font.family'] = chosen_font
+else:
+    print(f"WARNING: Font '{chosen_font}' not found! Using default Matplotlib font.")
 
 def plotConvergence(convg):
-    """
-  Plots convergence metrics for heat transfer optimization.
-
-  - Uses semilog scale for thermal resistance minimization.
-  - Ensures temperature field plots remain in linear scale.
-  """
     x = np.array(convg['epoch'])
 
     for key in convg:
         if key == 'epoch':
-            continue  # 'epoch' is the x-axis for all plots
+            continue
 
-        plt.figure(figsize=(7, 5))
+        plt.figure(figsize=(10, 6))
         y = np.array(convg[key])
 
-        # Use logarithmic scale for thermal resistance, linear for temperature
         if 'resistance' in key.lower():
             plt.semilogy(x, y, label=str(key), color='b', linestyle='--')
-            plt.ylabel(f"{key} (log scale)")
         else:
-            plt.plot(x, y, label=str(key), color='r', linestyle='-')
-            plt.ylabel(str(key))
+            plt.plot(x, y, label=str(key), linestyle='-', marker='o', markersize=6)
 
-        plt.xlabel('Iterations')
-        plt.title(f"Convergence of {key}")
+        plt.xlabel('Iterations', fontsize=14)
+        plt.ylabel(str(key), fontsize=14)
+        plt.title(f"Convergence of {key}", fontsize=16)
+        plt.legend(loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=12, frameon=True)
         plt.grid(True, linestyle='--', alpha=0.7)
-        plt.legend()
+        plt.tight_layout()
         plt.show()
 
-
 def plotTemperatureField(temperature, mesh):
-    """
-  Plots the final temperature distribution.
-
-  - Uses a heatmap for temperature field visualization.
-  """
     if temperature is None or mesh is None:
         print("Temperature field or mesh data not provided.")
         return

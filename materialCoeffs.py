@@ -2,10 +2,28 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
-
+import matplotlib.font_manager as fm
 # Set default font for plots
 font = {'family': 'normal', 'size': 16}
 matplotlib.rc('font', **font)
+
+# Pick a font that exists
+available_fonts = sorted(set(f.name for f in fm.fontManager.ttflist))
+chosen_font = None
+for preferred_font in ["Arial", "DejaVu Sans", "Calibri", "Verdana", "Times New Roman"]:
+    if preferred_font in available_fonts:
+        chosen_font = preferred_font
+        break
+
+if chosen_font is None:
+    print("WARNING: No preferred font found. Using DejaVu Sans.")
+    chosen_font = "DejaVu Sans"  # Ensure a working fallback
+
+# 🔹 Force Matplotlib to use the selected font
+matplotlib.rcParams.update({
+    "font.family": chosen_font,
+    "axes.unicode_minus": False,  # Fixes minus sign issue in plots
+})
 
 # Define microstructure thermal conductivity coefficients
 microStrs = {
@@ -44,10 +62,28 @@ microStrs = {
 }
 
 
+def getThermalConductivity(vfracPow, microstructure):
+    """
+    Computes the interpolated thermal conductivity based on microstructure and volume fraction.
+
+    - `vfracPow`: Dictionary containing precomputed powers of volume fraction (`v^p`).
+    - `microstructure`: Microstructure dictionary from `microStrs`.
+
+    Returns:
+        Interpolated thermal conductivity.
+    """
+    k_interp = jnp.zeros_like(list(vfracPow.values())[0])  # Initialize conductivity array
+
+    for pw in range(microstructure['order'] + 1):
+        k_interp += microstructure['k'][str(pw)] * vfracPow[str(pw)]
+
+    return k_interp
+
+
 def plotInterpolateCoeffs():
     """
-  Plot interpolated thermal conductivity as a function of volume fraction.
-  """
+    Plot interpolated thermal conductivity as a function of volume fraction.
+    """
     numPts = 100
     v = np.linspace(0, 1, numPts)
 
@@ -68,7 +104,7 @@ def plotInterpolateCoeffs():
         plt.plot(v, k_interp[structure], color=colors[ctr % len(colors)],
                  linestyle=linestyles[ctr % len(linestyles)],
                  marker=markers[ctr % len(markers)],
-                 markevery=20, label=f'{structure}')
+                 markevery=5, label=f'{structure}')
 
     plt.xlabel('Volume Fraction (v)')
     plt.ylabel('Thermal Conductivity (k)')
@@ -77,4 +113,6 @@ def plotInterpolateCoeffs():
     plt.show()
 
 
-plotInterpolateCoeffs()
+# Prevent `plotInterpolateCoeffs()` from running unless this file is executed directly
+if __name__ == "__main__":
+    plotInterpolateCoeffs()

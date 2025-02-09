@@ -9,7 +9,7 @@ class JAXSolver:
         self.mesh = mesh
         self.material = material
         self.Ktemplates = getKMatrixGridMeshTemplates(mesh.elemSize, 'thermal')  # Updated for heat transfer
-        self.objectiveHandle = jit(self.objective)
+        self.objectiveHandle = jax.jit(self.objective)
         self.k0 = self.material.getThermalConductivityMatrix(self.mesh)  # Use thermal conductivity instead of stiffness
 
     # -----------------------#
@@ -27,6 +27,7 @@ class JAXSolver:
     def assembleK(self, k_field):
         """Assemble the global heat transfer matrix K (conductivity matrix)."""
         sK = jnp.zeros((self.mesh.numElems, 4, 4))  # 4 DOFs per element in heat transfer problems
+        k_field = jnp.asarray(k_field)  # ✅ Ensure it's a JAX array
 
         for elem in range(self.mesh.numElems):
             k = k_field[elem]
@@ -35,9 +36,7 @@ class JAXSolver:
 
         # Build global matrix K
         K = jnp.zeros((self.mesh.ndof, self.mesh.ndof))
-
-        # ✅ **Fix the indexing issue**
-        iK, jK = self.mesh.nodeIdx  # Unpack the tuple properly
+        iK, jK = map(jnp.array, self.mesh.nodeIdx)  # ✅ Fix indexing issue
 
         for elem in range(self.mesh.numElems):
             for i in range(4):
@@ -47,22 +46,27 @@ class JAXSolver:
         return K
 
     # -----------------------#
+    @jit
     def objective(self, k_field):
-        """
-        Objective function for heat transfer optimization.
-        - Minimizes thermal resistance by solving the heat conduction equation.
-        - k_field: Element-wise thermal conductivity distribution.
-        """
+        """Objective function for heat transfer optimization."""
+        print(f"DEBUG: Type of k_field: {type(k_field)} | Shape: {k_field.shape}")
+        print(f"DEBUG: Type of self: {type(self)}")  # Should be JAXSolver, not an array
+
+        k_field = jnp.asarray(k_field)  # ✅ Ensure it’s a JAX array
+        print(f"DEBUG: Converted k_field to JAX array with shape: {k_field.shape}")
+
+        K = self.assembleK(k_field)
+        T = self.solve(K)  # 🚨 Does `solve()` return an array?
+
+        # 🚨 Does `computeThermalObjective()` expect JAX arrays?
+        J = self.computeThermalObjective(K, T)
+        print(f"DEBUG: Objective Value Computed: {J}")
+
+        return J
 
         @jit
         def solve(K):
-            """
-            Solves for temperature field using:
-            K * T = Q (Fourier's heat conduction equation).
-            - K: Global heat transfer matrix.
-            - T: Temperature field.
-            - Q: Heat source vector.
-            """
+            """Solves for temperature field using Fourier's heat conduction equation."""
             T_free = jax.scipy.linalg.solve(
                 K[self.mesh.bc['free'], :][:, self.mesh.bc['free']],
                 self.mesh.bc['heat'][self.mesh.bc['free']],  # Heat source instead of force
@@ -72,13 +76,8 @@ class JAXSolver:
             T = T.at[self.mesh.bc['free']].set(T_free.reshape(-1))  # Updated
             return T
 
-        @jit
         def computeThermalObjective(K, T):
-            """
-            Compute the objective function for heat transfer:
-            - Default: Minimize total thermal resistance (gradient of temperature).
-            - Alternative: Minimize max temperature (to avoid hotspots).
-            """
+            """Compute total thermal resistance to minimize heat transfer resistance."""
             thermal_resistance = jnp.sum(K * jnp.square(jnp.gradient(T)))
             return thermal_resistance
 
@@ -93,8 +92,7 @@ class JAXSolver:
         Solves the temperature distribution based on the given material distribution.
         Returns: Nodal temperature field.
         """
-
-        @jit
+        #@jit
         def assembleK():
             """Assemble the heat transfer matrix."""
             sK = jnp.zeros((self.mesh.numElems, 4, 4))  # 4 DOFs per element for temperature
@@ -120,5 +118,3 @@ class JAXSolver:
         K = assembleK()  # Assemble global conductivity matrix
         T = solve(K)  # Solve for temperature field
         return T  # Return temperature distribution
-
-    # -----------------------#

@@ -33,7 +33,7 @@ mu = 1.01
 [OPTIMIZATION]
 # Instead of Volume Fraction, we optimize the conductive material fraction
 desiredConductiveFraction = 0.6
-numEpochs = 250
+numEpochs = 100
 lr = 1e-2
 gradClip_isOn = True
 gradClip_clipNorm = 2e-1

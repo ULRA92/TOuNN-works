@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.rcParams['font.family'] = 'Helvetica','Times New Roman'
 import jax.numpy as jnp
 import jax
 
@@ -258,31 +257,48 @@ class UnstructuredMesher:
     return points
 
   # -----------------------#
-  def plotFieldOnMesh(self, field, titleStr, res=1):
-    """Plots the field (e.g., temperature distribution) on the mesh."""
+
+"""
+def plotFieldOnMesh(self, field, titleStr, res=1):
+    #Plots the field (e.g., temperature distribution) on the mesh in real-time.
     y = self.nodeXY[:, 0]
     z = self.nodeXY[:, 1]
 
     def quatplot(y, z, quadrangles, values, ax=None, **kwargs):
-      """Helper function to plot quadrilateral elements with color mapping."""
-      if not ax:
-        ax = plt.gca()
-      yz = np.c_[y, z]
-      verts = yz[quadrangles]
-      pc = matplotlib.collections.PolyCollection(verts, **kwargs)
-      pc.set_array(values)
-      ax.add_collection(pc)
-      ax.autoscale()
-      ax.set_aspect('equal')
-      return pc
+        #Helper function to plot quadrilateral elements with color mapping.
+        if ax is None:
+            ax = plt.gca()
+        yz = np.c_[y, z]
+        verts = yz[quadrangles]
+        pc = matplotlib.collections.PolyCollection(verts, **kwargs)
+        pc.set_array(values)
+        ax.add_collection(pc)
+        ax.autoscale()
+        ax.set_aspect('equal')
+        return pc
 
+    # Enable interactive mode and prevent unnecessary clearing
     plt.ion()
     plt.clf()
 
-    pc = quatplot(y, z, np.asarray(self.elemNodes), -field, ax=None, edgecolor="black", cmap="hot")
-    plt.colorbar(label="Temperature (°C)")
-    plt.title(titleStr)
-    plt.pause(0.001)
-    plt.show()
-    self.fig.canvas.draw()
+    # Ensure color normalization for better visibility
+    field = -field.flatten()  # Invert field if needed
+    min_val, max_val = np.min(field), np.max(field)
 
+    # Set up plot
+    fig, ax = plt.subplots(figsize=(6, 5))
+    pc = quatplot(y, z, np.asarray(self.elemNodes), field, ax=ax, edgecolor="black", cmap="hot")
+
+    # Fix color scale
+    pc.set_clim(min_val, max_val)
+    plt.colorbar(pc, ax=ax, label="Temperature (°C)")
+
+    # Titles and labels
+    ax.set_title(titleStr)
+    ax.set_xlabel("X-axis (m)")
+    ax.set_ylabel("Y-axis (m)")
+
+    # Refresh plot without blocking execution
+    plt.draw()
+    plt.pause(0.1)  # Small delay to allow GUI refresh
+"""

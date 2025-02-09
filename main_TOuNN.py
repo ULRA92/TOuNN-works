@@ -1,33 +1,64 @@
+import os
+import jax.numpy as jnp
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.rcParams['font.family'] = 'Helvetica','Times New Roman'
+import matplotlib.font_manager as fm
+import time
+import configparser
+
 from examples import getExampleBC
 from Mesher import RectangularGridMesher, UnstructuredMesher
 from projections import computeFourierMap
 from material import Material
 from TOuNN import TOuNN
 from plotUtil import plotConvergence, plotTemperatureField
-import time
-import configparser
 
-# %% Read Configuration File
+# ==================== 🔹 JAX MEMORY FIXES ====================
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.3"  # Use only 30% of available memory
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+
+# ==================== 🔹 MATPLOTLIB FONT FIXES ====================
+# Get all available fonts
+"""
+available_fonts = sorted(set(f.name for f in fm.fontManager.ttflist))
+
+# Pick a font that exists
+chosen_font = None
+for preferred_font in ["Arial", "DejaVu Sans", "Calibri", "Verdana", "Times New Roman"]:
+    if preferred_font in available_fonts:
+        chosen_font = preferred_font
+        break
+
+if chosen_font is None:
+    print("WARNING: No preferred font found. Using DejaVu Sans.")
+    chosen_font = "DejaVu Sans"  # Ensure a working fallback
+
+# 🔹 Force Matplotlib to use the selected font
+matplotlib.rcParams.update({
+    "font.family": chosen_font,
+    "axes.unicode_minus": False,  # Fixes minus sign issue in plots
+})
+"""
+#print(f"DEBUG: Using font: {chosen_font}")
+
+# ==================== 🔹 READ CONFIGURATION ====================
 configFile = './config.txt'
 config = configparser.ConfigParser()
 config.read(configFile)
 
-# %% Mesh and BC (Heat Transfer Case)
+# ==================== 🔹 MESH AND BOUNDARY CONDITIONS ====================
 meshConfig = config['MESH']
-ndim = meshConfig.getint('ndim')  # Default: 2D
-nelx = meshConfig.getint('nelx')  # Number of elements along X
-nely = meshConfig.getint('nely')  # Number of elements along Y
+ndim = meshConfig.getint('ndim')
+nelx = meshConfig.getint('nelx')
+nely = meshConfig.getint('nely')
 elemSize = np.array(meshConfig['elemSize'].split(',')).astype(float)
 
 exampleName, bcSettings, symMap = getExampleBC(1, nelx, nely, elemSize)
 
-# Select structured or unstructured meshing
+# Use structured or unstructured meshing
 mesh = RectangularGridMesher(ndim, nelx, nely, elemSize, bcSettings, physics='thermal')
-# mesh = UnstructuredMesher(bcSettings, physics='thermal')
 
 # Apply thermal boundary conditions
 mesh.processBoundaryCondition(
@@ -36,18 +67,20 @@ mesh.processBoundaryCondition(
     heatSourceNodes=bcSettings.get('heatSourceNodes', [])
 )
 
-# %% Material (Thermal Conductivity)
+# ==================== 🔹 MATERIAL PROPERTIES ====================
 materialConfig = config['MATERIAL']
 k_max, k_min = materialConfig.getfloat('k_max'), materialConfig.getfloat('k_min')
 matProp = {'physics': 'thermal', 'k_max': k_max, 'k_min': k_min}
 material = Material(matProp)
 
-# %% Neural Network Settings
+# ==================== 🔹 NEURAL NETWORK SETTINGS ====================
 tounnConfig = config['TOUNN']
 nnSettings = {
     'numLayers': tounnConfig.getint('numLayers'),
     'numNeuronsPerLayer': tounnConfig.getint('hiddenDim'),
-    'outputDim': tounnConfig.getint('outputDim')
+    'outputDim': tounnConfig.getint('outputDim'),
+    'inputDim': 2
+
 }
 
 fourierMap = {
@@ -58,7 +91,7 @@ fourierMap = {
 }
 fourierMap['map'] = computeFourierMap(mesh, fourierMap)
 
-# %% Optimization Parameters
+# ==================== 🔹 OPTIMIZATION PARAMETERS ====================
 lossConfig = config['LOSS']
 lossMethod = {
     'type': 'penalty',
@@ -78,27 +111,48 @@ optParams = {
     }
 }
 
-# Other Projection Settings
+# Projection Settings
 rotationalSymmetry = {'isOn': False, 'sectorAngleDeg': 90, 'centerCoordn': np.array([20, 10])}
 extrusion = {'X': {'isOn': False, 'delta': 1.}, 'Y': {'isOn': False, 'delta': 1.}}
 
-# %% Run Optimization
+# ==================== 🔹 RUN OPTIMIZATION ====================
+dummy_k = jnp.ones((mesh.numElems,), dtype=jnp.float32)  # Use float32 instead of default float64
+dummy_tounn = TOuNN(exampleName, mesh, material, nnSettings, symMap, fourierMap, rotationalSymmetry, extrusion)
+
+# **🚀 Precompile JIT before main execution**
+try:
+    dummy_tounn.FE.objectiveHandle(dummy_k)
+    print("DEBUG: JIT Compilation Successful")
+except Exception as e:
+    print(f"ERROR: JIT Compilation Failed - {e}")
+
 plt.close('all')
 savedNet = {'isAvailable': False, 'file': './netWeights.pkl', 'isDump': False}
 
 start = time.perf_counter()
 tounn = TOuNN(exampleName, mesh, material, nnSettings, symMap, fourierMap, rotationalSymmetry, extrusion)
-convgHistory = tounn.optimizeDesign(optParams, savedNet)
+
+# 🏆 Optimization Loop with Intermediate Plotting
+convgHistory = []  # Initialize empty convergence history list
+
+for epoch in range(optParams['maxEpochs']):
+    loss = tounn.optimizeDesign(optParams, savedNet) # Run one step and capture loss
+    convgHistory.append(loss)  # Store loss history for plotting
+
+    if epoch % 50 == 0:  # Plot every 50 iterations
+
+        tempField = tounn.FE.solveTemperatureField()
+        mesh.plotFieldOnMesh(tempField, titleStr=f"Temperature Field at Iteration {epoch}")
 
 print(f'Time taken (sec): {time.perf_counter() - start:.2F}')
 
-# Plot Convergence History (Thermal Optimization)
-plotConvergence(convgHistory)
+# ==================== 🔹 PLOT CONVERGENCE HISTORY ====================
+plotConvergence(convgHistory)  # Now properly defined
 
-# Compute Final Temperature Field
+# ==================== 🔹 COMPUTE FINAL TEMPERATURE FIELD ====================
 finalTemperature = tounn.FE.solveTemperatureField()
 
-# Plot Final Temperature Distribution
+# ==================== 🔹 PLOT FINAL TEMPERATURE DISTRIBUTION ====================
 plotTemperatureField(finalTemperature, mesh.nodeXY)
 
-plt.show(block=True)
+plt.show(block=True)  # Keep the final plot open
