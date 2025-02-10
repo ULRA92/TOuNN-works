@@ -18,6 +18,7 @@ k_min = 0.1
 numLayers = 2
 hiddenDim = 20
 outputDim = 12
+inputDim = 2
 fourier_isOn = True
 fourier_minRadius = 12
 fourier_maxRadius = 200

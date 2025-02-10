@@ -3,17 +3,6 @@ import matplotlib
 import matplotlib.font_manager as fm
 import numpy as np
 
-# DEBUG: Print available fonts to ensure selection
-available_fonts = sorted([f.name for f in fm.fontManager.ttflist])
-print("DEBUG: Available Fonts in Matplotlib:", available_fonts)
-
-# Pick a known available font from the list
-chosen_font = "Arial"  # Change this to any font from the printed list
-if chosen_font in available_fonts:
-    matplotlib.rcParams['font.family'] = chosen_font
-else:
-    print(f"WARNING: Font '{chosen_font}' not found! Using default Matplotlib font.")
-
 def plotConvergence(convg):
     x = np.array(convg['epoch'])
 

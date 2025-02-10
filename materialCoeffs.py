@@ -4,26 +4,8 @@ import numpy as np
 import matplotlib
 import matplotlib.font_manager as fm
 # Set default font for plots
-font = {'family': 'normal', 'size': 16}
+font = {'family': 'Arial'}
 matplotlib.rc('font', **font)
-
-# Pick a font that exists
-available_fonts = sorted(set(f.name for f in fm.fontManager.ttflist))
-chosen_font = None
-for preferred_font in ["Arial", "DejaVu Sans", "Calibri", "Verdana", "Times New Roman"]:
-    if preferred_font in available_fonts:
-        chosen_font = preferred_font
-        break
-
-if chosen_font is None:
-    print("WARNING: No preferred font found. Using DejaVu Sans.")
-    chosen_font = "DejaVu Sans"  # Ensure a working fallback
-
-# 🔹 Force Matplotlib to use the selected font
-matplotlib.rcParams.update({
-    "font.family": chosen_font,
-    "axes.unicode_minus": False,  # Fixes minus sign issue in plots
-})
 
 # Define microstructure thermal conductivity coefficients
 microStrs = {

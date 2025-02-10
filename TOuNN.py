@@ -24,12 +24,14 @@ class TOuNN:
         self.mstrData = microStrs
         self.rotationalSymmetry = rotationalSymmetry
         self.extrusion = extrusion
-        self.objectiveHandle = lambda *args: self.objective(FE=self.FE, *args)
 
-    def objective(self, getThermalMatrix, mstrType, nn_rho):
-        """ Objective function - No JIT on FE """
-        k = jnp.array(getThermalMatrix(mstrType, nn_rho))
-        return self.FE.objective(k)
+        # ✅ Define JIT function inside __init__ to access `self.FE`
+        @jit
+        def jit_objective(getThermalMatrix, mstrType, nn_rho):
+            return self.FE.objective(getThermalMatrix(mstrType, nn_rho))
+
+        self.objectiveHandle = partial(jit_objective)  # ✅ Now it's inside __init__
+
 
     def getThermalMatrix(self, mstrType, nn_rho):
         vfracPow = {str(pw): nn_rho ** pw for pw in range(self.mstrData.get('square', {}).get('order', 0) + 1)}
@@ -45,7 +47,7 @@ class TOuNN:
         convgHistory = {'epoch': [], 'vf': [], 'J': []}
         opt_init, opt_update, get_params = optimizers.adam(optParams['learningRate'])
         opt_state = opt_init(self.topNet.wts)
-        opt_update = jit(opt_update)
+        opt_update = jax.jit(opt_update, static_argnums=(0,))  # Prevents re-compilation every step
 
         if savedNet['isAvailable']:
             saved_params = pickle.load(open(savedNet['file'], "rb"))
@@ -58,6 +60,8 @@ class TOuNN:
 
         mstrType, density0 = self.topNet.forward(get_params(opt_state), xyF)
         J0 = self.objectiveHandle(self.getThermalMatrix, mstrType, 0.01 + density0)
+        print(f"DEBUG: xyF type = {type(xyF)}, shape = {xyF.shape}")
+        print(f"DEBUG: First 5 rows of xyF = {xyF[:5]}")
 
         def computeLoss(objective, constraints):
             loss = objective

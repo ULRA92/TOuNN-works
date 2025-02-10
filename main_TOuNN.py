@@ -1,9 +1,11 @@
 import os
+import gc
+import time
 import jax.numpy as jnp
 import numpy as np
-import matplotlib.pyplot as plt
-import time
+import psutil
 import configparser
+import matplotlib.pyplot as plt
 
 from examples import getExampleBC
 from Mesher import RectangularGridMesher
@@ -12,10 +14,13 @@ from material import Material
 from TOuNN import TOuNN
 from plotUtil import plotConvergence, plotTemperatureField
 
-# ==================== 🔹 JAX MEMORY FIXES ====================
+# ==================== 🔹 MEMORY MANAGEMENT FIXES ====================
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.3"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.05"
 os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+
+gc.collect()
+print(f"DEBUG: Available RAM: {psutil.virtual_memory().available / 1e9:.2f} GB")
 
 # ==================== 🔹 READ CONFIGURATION ====================
 configFile = './config.txt'
@@ -47,9 +52,10 @@ material = Material(matProp)
 # ==================== 🔹 NEURAL NETWORK SETTINGS ====================
 tounnConfig = config['TOUNN']
 nnSettings = {
-    'numLayers': tounnConfig.getint('numLayers'),
-    'numNeuronsPerLayer': tounnConfig.getint('hiddenDim'),
-    'outputDim': tounnConfig.getint('outputDim')
+    'numLayers': 2,  # Reduced layers to save memory
+    'numNeuronsPerLayer': 32,  # Reduced neurons per layer
+    'outputDim': tounnConfig.getint('outputDim'),
+    'inputDim': 2
 }
 
 fourierMap = {
@@ -83,7 +89,7 @@ optParams = {
 rotationalSymmetry = {'isOn': False, 'sectorAngleDeg': 90, 'centerCoordn': np.array([20, 10])}
 extrusion = {'X': {'isOn': False, 'delta': 1.}, 'Y': {'isOn': False, 'delta': 1.}}
 
-dummy_k = jnp.ones((mesh.numElems,), dtype=jnp.float32)
+dummy_k = jnp.ones((mesh.numElems,), dtype=jnp.float32)  # ✅ Use float32 to reduce memory usage
 dummy_tounn = TOuNN(exampleName, mesh, material, nnSettings, symMap, fourierMap, rotationalSymmetry, extrusion)
 
 # **🚀 Precompile JIT before main execution**

@@ -258,7 +258,7 @@ class UnstructuredMesher:
 
   # -----------------------#
 
-"""
+
 def plotFieldOnMesh(self, field, titleStr, res=1):
     #Plots the field (e.g., temperature distribution) on the mesh in real-time.
     y = self.nodeXY[:, 0]
@@ -301,4 +301,4 @@ def plotFieldOnMesh(self, field, titleStr, res=1):
     # Refresh plot without blocking execution
     plt.draw()
     plt.pause(0.1)  # Small delay to allow GUI refresh
-"""
+
